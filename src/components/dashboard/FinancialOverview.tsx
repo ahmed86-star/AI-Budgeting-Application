@@ -25,15 +25,14 @@ const FinancialOverview = ({
   savingsProgress = 750,
 }: FinancialOverviewProps) => {
   // Calculate savings percentage
-  const savingsPercentage = Math.min(
-    Math.round((savingsProgress / savingsGoal) * 100),
-    100,
-  );
+  const savingsPercentage =
+    savingsGoal <= 0
+      ? 0
+      : Math.min(Math.round((savingsProgress / savingsGoal) * 100), 100);
 
   // Calculate budget utilization percentage
-  const budgetUtilizationPercentage = Math.round(
-    (totalExpenses / totalIncome) * 100,
-  );
+  const budgetUtilizationPercentage =
+    totalIncome > 0 ? Math.round((totalExpenses / totalIncome) * 100) : 0;
 
   return (
     <div className="w-full bg-card rounded-lg p-6 shadow-md">
@@ -70,7 +69,9 @@ const FinancialOverview = ({
               ${totalExpenses.toLocaleString()}
             </div>
             <p className="text-xs text-red-600 mt-1">
-              {budgetUtilizationPercentage}% of income spent
+              {totalIncome > 0
+                ? `${budgetUtilizationPercentage}% of income spent`
+                : "0% of income spent"}
             </p>
           </CardContent>
         </Card>
@@ -88,7 +89,9 @@ const FinancialOverview = ({
               ${remainingBudget.toLocaleString()}
             </div>
             <p className="text-xs text-green-600 mt-1">
-              {100 - budgetUtilizationPercentage}% of income remaining
+              {totalIncome > 0
+                ? `${100 - budgetUtilizationPercentage}% of income remaining`
+                : "0% of income remaining"}
             </p>
           </CardContent>
         </Card>

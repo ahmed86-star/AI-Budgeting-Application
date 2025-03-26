@@ -17,6 +17,7 @@ import {
   BarChart3,
   User,
   LogOut,
+  Bell,
 } from "lucide-react";
 
 interface HeaderProps {
@@ -92,6 +93,13 @@ const Header = ({
               >
                 <BarChart3 className="mr-2 h-4 w-4" />
                 <span>Reports</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="cursor-pointer"
+                onClick={() => (window.location.href = "/alerts")}
+              >
+                <Bell className="mr-2 h-4 w-4" />
+                <span>Budget Alerts</span>
               </DropdownMenuItem>
             </DropdownMenuGroup>
           </DropdownMenuContent>

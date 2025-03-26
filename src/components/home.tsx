@@ -11,8 +11,10 @@ import BudgetAlerts, {
   BudgetAlert,
   AlertThresholds,
 } from "./dashboard/BudgetAlerts";
+import FinancialTips from "./dashboard/FinancialTips";
+import ExportOptions from "./dashboard/ExportOptions";
 import { Button } from "./ui/button";
-import { MoonIcon, SunIcon, RefreshCw } from "lucide-react";
+import { MoonIcon, SunIcon, RefreshCw, HelpCircle } from "lucide-react";
 
 interface Expense {
   id: string;
@@ -76,9 +78,16 @@ const Home = () => {
         const updatedCategories = [...budgetCategories];
         updatedCategories[categoryIndex].spent += newExpense.amount;
         setBudgetCategories(updatedCategories);
+        // Create a serializable version without any potential circular references
+        const serializableCategories = updatedCategories.map((cat) => ({
+          name: cat.name,
+          allocated: cat.allocated,
+          spent: cat.spent,
+        }));
+
         localStorage.setItem(
           "userBudgetCategories",
-          JSON.stringify(updatedCategories),
+          JSON.stringify(serializableCategories),
         );
       }
     } else {
@@ -174,6 +183,21 @@ const Home = () => {
   const handleIncomeUpdate = (newIncome: number) => {
     setIncome(newIncome);
     localStorage.setItem("userIncome", newIncome.toString());
+
+    // Update budget categories with new income value
+    if (budgetCategories.length > 0) {
+      const updatedCategories = budgetCategories.map((category) => ({
+        ...category,
+        allocated: Math.round(
+          newIncome * (category.allocated / (income || 1)) || 0,
+        ),
+      }));
+      setBudgetCategories(updatedCategories);
+      localStorage.setItem(
+        "userBudgetCategories",
+        JSON.stringify(updatedCategories),
+      );
+    }
   };
 
   // Handle dismissing an alert
@@ -193,6 +217,14 @@ const Home = () => {
 
   // Handle saving budget allocations
   const handleSaveBudget = (categories: BudgetCategoryType[]) => {
+    // Validate input categories
+    if (!categories || categories.length === 0) {
+      console.error("No budget categories provided to handleSaveBudget");
+      return;
+    }
+
+    console.log("Saving budget categories", categories);
+
     // Convert the budget categories from BudgetAllocation to the format used in Home
     const updatedBudgetCategories = categories.map((category) => ({
       name: category.name,
@@ -206,10 +238,31 @@ const Home = () => {
     // Update state
     setBudgetCategories(updatedBudgetCategories);
 
-    // Save to localStorage
+    // Save to localStorage - ensure we're not saving React nodes
+    const serializableBudgetCategories = updatedBudgetCategories.map((cat) => ({
+      name: cat.name,
+      allocated: cat.allocated,
+      spent: cat.spent,
+    }));
+
     localStorage.setItem(
       "userBudgetCategories",
-      JSON.stringify(updatedBudgetCategories),
+      JSON.stringify(serializableBudgetCategories),
+    );
+
+    // Update the UI to reflect changes immediately
+    setTimeout(() => {
+      // Force a re-render by updating a state value
+      setIncome((prev) => {
+        // Save the same value but trigger re-render
+        localStorage.setItem("userIncome", prev.toString());
+        return prev;
+      });
+    }, 100);
+
+    console.log(
+      "Budget categories saved successfully",
+      updatedBudgetCategories,
     );
   };
 
@@ -258,9 +311,27 @@ const Home = () => {
         theme={theme}
       />
 
-      <div className="container mx-auto px-4 pt-2 flex justify-end">
+      <div className="container mx-auto px-4 pt-2 flex justify-end gap-2">
         <Button
-          onClick={handleReset}
+          onClick={() => (window.location.href = "/support")}
+          variant="outline"
+          size="sm"
+          className={`${theme === "light" ? "bg-white hover:bg-gray-100" : "bg-gray-800 hover:bg-gray-700"} flex items-center gap-1`}
+        >
+          <HelpCircle className="h-4 w-4" />
+          Help & Support
+        </Button>
+        <Button
+          onClick={() => {
+            if (
+              confirm(
+                "Are you sure you want to reset all data? This will clear all your income, expenses, and budget settings.",
+              )
+            ) {
+              handleReset();
+              alert("All data has been reset successfully!");
+            }
+          }}
           variant="outline"
           size="sm"
           className={`${theme === "light" ? "bg-white hover:bg-gray-100" : "bg-gray-800 hover:bg-gray-700"} flex items-center gap-1`}
@@ -287,20 +358,25 @@ const Home = () => {
               onIncomeUpdate={handleIncomeUpdate}
               initialIncome={income}
             />
-            <BudgetAlerts
-              alerts={alerts}
-              onDismissAlert={handleDismissAlert}
-              onUpdateThresholds={handleUpdateThresholds}
-              thresholds={alertThresholds}
-              budgetCategories={budgetCategories}
-              savingsGoal={savingsGoal}
-              savingsProgress={savingsProgress}
-            />
           </div>
 
           {/* Middle and Right Columns */}
           <div className="lg:col-span-2 space-y-6">
-            <BudgetAllocation income={income} onSaveBudget={handleSaveBudget} />
+            <BudgetAllocation
+              income={income}
+              onSaveBudget={handleSaveBudget}
+              savingsGoal={savingsGoal}
+              savingsProgress={savingsProgress}
+              onSavingsUpdate={(goal, progress) => {
+                setSavingsGoal(goal);
+                setSavingsProgress(progress);
+                localStorage.setItem("userSavingsGoal", goal.toString());
+                localStorage.setItem(
+                  "userSavingsProgress",
+                  progress.toString(),
+                );
+              }}
+            />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <ExpenseTracker
@@ -311,21 +387,46 @@ const Home = () => {
                 <SpendingCharts />
               </div>
             </div>
+
+            <div className="mt-6">
+              <BudgetAlerts
+                alerts={alerts}
+                onDismissAlert={handleDismissAlert}
+                onUpdateThresholds={handleUpdateThresholds}
+                thresholds={alertThresholds}
+                budgetCategories={budgetCategories}
+                savingsGoal={savingsGoal}
+                savingsProgress={savingsProgress}
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+              <FinancialTips
+                income={income}
+                expenses={expenses.map((exp) => exp.amount)}
+              />
+              <ExportOptions
+                expenses={expenses}
+                income={income}
+                budgetCategories={budgetCategories}
+              />
+            </div>
           </div>
         </div>
       </main>
 
-      <footer className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-purple-900 py-4 border-t mt-10">
+      <div className="py-10"></div>
+      <footer className="bg-gradient-to-r from-blue-100 to-purple-100 dark:from-gray-800 dark:to-purple-900 py-6 border-t fixed bottom-0 w-full">
         <div className="container mx-auto px-4 text-center">
           <p className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 font-medium text-sm md:text-base">
-            © 2025 BudgetAI - AI-Powered Budget Management Dashboard |{" "}
+            © 2025 BudgetAI - AI-Powered Budget Management Dashboard |
             <a
               href="https://github.com/ahmed86-star"
               className="hover:text-blue-500 transition-colors duration-300 font-semibold"
             >
               GitHub
             </a>{" "}
-            |{" "}
+            |
             <a
               href="https://ahmed-dev1.com/"
               className="hover:text-purple-500 transition-colors duration-300 font-semibold"

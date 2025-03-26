@@ -261,10 +261,10 @@ const BudgetAlerts = ({
   };
 
   return (
-    <Card className="w-full h-full bg-card shadow-md">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
-        <CardTitle className="text-lg font-bold flex items-center gap-2">
-          <Bell className="h-5 w-5 text-primary" />
+    <Card className="w-full h-full bg-card shadow-lg border border-muted/20">
+      <CardHeader className="pb-4 flex flex-row items-center justify-between sticky top-0 bg-card z-10">
+        <CardTitle className="text-xl font-bold flex items-center gap-3">
+          <Bell className="h-6 w-6 text-primary" />
           Budget Alerts
         </CardTitle>
         <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
@@ -373,16 +373,16 @@ const BudgetAlerts = ({
           </DialogContent>
         </Dialog>
       </CardHeader>
-      <CardContent className="space-y-3 max-h-[300px] overflow-y-auto p-3">
+      <CardContent className="space-y-6 max-h-[500px] overflow-y-auto p-6 pt-2">
         {filteredAlerts.length > 0 ? (
           filteredAlerts.map((alert) => (
             <Alert
               key={alert.id}
               variant={getAlertVariant(alert.type)}
-              className={`${getAlertBorderColor(alert.type)} ${getAlertBackground(alert.type)} border-l-4 shadow-sm transition-all hover:shadow-md group relative`}
+              className={`${getAlertBorderColor(alert.type)} ${getAlertBackground(alert.type)} border-l-4 shadow-sm transition-all hover:shadow-md group relative mb-5 p-5 rounded-md`}
             >
               <div className="flex items-start">
-                <div className="mr-2 mt-0.5">{getAlertIcon(alert.type)}</div>
+                <div className="mr-3 mt-0.5">{getAlertIcon(alert.type)}</div>
                 <div className="flex-1">
                   <AlertTitle className="font-medium flex items-center gap-2">
                     {alert.title}
@@ -392,10 +392,10 @@ const BudgetAlerts = ({
                       </span>
                     )}
                   </AlertTitle>
-                  <AlertDescription className="text-sm">
+                  <AlertDescription className="text-sm mt-1">
                     {alert.description}
                   </AlertDescription>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-xs text-muted-foreground mt-2">
                     {alert.date}
                   </p>
                 </div>
@@ -420,7 +420,7 @@ const BudgetAlerts = ({
           </div>
         )}
       </CardContent>
-      <CardFooter className="pt-0 pb-3 px-3">
+      <CardFooter className="pt-2 pb-4 px-6 border-t border-muted/10 mt-2">
         <p className="text-xs text-muted-foreground w-full text-center">
           Alerts are generated based on your spending patterns and budget
           thresholds

@@ -24,12 +24,21 @@ export interface BudgetCategory {
 interface BudgetAllocationProps {
   income?: number;
   onSaveBudget?: (categories: BudgetCategory[]) => void;
+  savingsGoal?: number;
+  savingsProgress?: number;
+  onSavingsUpdate?: (goal: number, progress: number) => void;
 }
 
 const BudgetAllocation = ({
-  income = 5000,
+  income = 0,
   onSaveBudget = () => {},
+  savingsGoal = 0,
+  savingsProgress = 0,
+  onSavingsUpdate = () => {},
 }: BudgetAllocationProps) => {
+  // Ensure income is a valid number
+  const validIncome =
+    typeof income === "number" && !isNaN(income) && income > 0 ? income : 0;
   const defaultCategories: BudgetCategory[] = [
     {
       id: "housing",
@@ -103,12 +112,106 @@ const BudgetAllocation = ({
     setCategories(defaultCategories);
     setTotalPercentage(100);
     setIsEditing(false);
+    // Ensure we're passing the complete budget data to the parent component
     onSaveBudget(defaultCategories);
+
+    // Update savings based on the savings category
+    const savingsCategory = defaultCategories.find(
+      (cat) => cat.id === "savings",
+    );
+    if (savingsCategory && income > 0) {
+      const newSavingsGoal = Math.round(
+        (income * savingsCategory.percentage) / 100,
+      );
+      // If we have a savings goal, update it and the progress proportionally
+      if (savingsGoal > 0) {
+        const progressRatio = savingsProgress / savingsGoal;
+        const newProgress = Math.round(progressRatio * newSavingsGoal);
+        onSavingsUpdate(newSavingsGoal, newProgress);
+      } else {
+        // If no previous goal, set progress to 0
+        onSavingsUpdate(newSavingsGoal, 0);
+      }
+    }
+
+    console.log("Accepted recommendations", defaultCategories);
   };
 
   const handleSaveCustomAllocations = () => {
     setIsEditing(false);
-    onSaveBudget(categories);
+    // Only save if the total percentage is exactly 100%
+    if (totalPercentage === 100) {
+      // Convert categories to the format expected by the parent component
+      const formattedCategories = categories.map((cat) => ({
+        ...cat,
+        // Ensure percentage is a number
+        percentage:
+          typeof cat.percentage === "number"
+            ? cat.percentage
+            : parseInt(cat.percentage as any, 10) || 0,
+      }));
+
+      // Save to parent component state
+      onSaveBudget(formattedCategories);
+
+      // Save to localStorage for persistence
+      // Create a serializable version of the categories without React nodes
+      const serializableCategories = formattedCategories.map((cat) => ({
+        id: cat.id,
+        name: cat.name,
+        percentage: cat.percentage,
+        color: cat.color,
+        // Exclude the icon React node which causes circular reference
+      }));
+      localStorage.setItem(
+        "userBudgetCategories",
+        JSON.stringify(serializableCategories),
+      );
+      console.log("Saved custom allocations", formattedCategories);
+
+      // Update savings based on the savings category
+      const savingsCategory = formattedCategories.find(
+        (cat) => cat.id === "savings",
+      );
+      if (savingsCategory && income > 0) {
+        const newSavingsGoal = Math.round(
+          (income * savingsCategory.percentage) / 100,
+        );
+        // If we have a savings goal, update it and the progress proportionally
+        if (savingsGoal > 0) {
+          const progressRatio = savingsProgress / savingsGoal;
+          const newProgress = Math.round(progressRatio * newSavingsGoal);
+          onSavingsUpdate(newSavingsGoal, newProgress);
+        } else {
+          // If no previous goal, set progress to 0
+          onSavingsUpdate(newSavingsGoal, 0);
+        }
+      }
+
+      // Show a temporary success message
+      const successMessage = document.createElement("div");
+      successMessage.className =
+        "fixed top-4 right-4 bg-green-500 text-white p-3 rounded-md shadow-lg z-50";
+      successMessage.textContent = "Budget allocations saved successfully!";
+      document.body.appendChild(successMessage);
+
+      // Remove the message after 3 seconds
+      setTimeout(() => {
+        document.body.removeChild(successMessage);
+      }, 3000);
+    } else {
+      // Show error message if total is not 100%
+      const errorMessage = document.createElement("div");
+      errorMessage.className =
+        "fixed top-4 right-4 bg-red-500 text-white p-3 rounded-md shadow-lg z-50";
+      errorMessage.textContent = `Total allocation must be 100%. Current: ${totalPercentage}%`;
+      document.body.appendChild(errorMessage);
+
+      // Remove the error message after 3 seconds
+      setTimeout(() => {
+        document.body.removeChild(errorMessage);
+      }, 3000);
+    }
   };
 
   return (
@@ -116,8 +219,9 @@ const BudgetAllocation = ({
       <CardHeader className="pb-2">
         <CardTitle className="text-2xl font-bold">Budget Allocation</CardTitle>
         <CardDescription>
-          AI-recommended budget breakdown based on your monthly income of $
-          {income.toLocaleString()}
+          {validIncome > 0
+            ? `AI-recommended budget breakdown based on your monthly income of $${validIncome.toLocaleString()}`
+            : "Please enter your income to see personalized budget recommendations"}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -142,11 +246,11 @@ const BudgetAllocation = ({
           )}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
           {categories.map((category) => (
             <Card
               key={category.id}
-              className="overflow-hidden border-t-4"
+              className="overflow-hidden border-t-4 text-sm sm:text-base"
               style={{ borderTopColor: category.color.replace("bg-", "") }}
             >
               <CardHeader className="pb-2 pt-4">
@@ -164,54 +268,126 @@ const BudgetAllocation = ({
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold mb-2">
-                  $
-                  {Math.round(
-                    (income * category.percentage) / 100,
-                  ).toLocaleString()}
+                  {validIncome > 0
+                    ? `$${Math.round((validIncome * category.percentage) / 100).toLocaleString()}`
+                    : "$0"}
                 </div>
                 {isEditing && (
-                  <Slider
-                    defaultValue={[category.percentage]}
-                    max={100}
-                    step={1}
-                    value={[category.percentage]}
-                    onValueChange={(value) =>
-                      handleSliderChange(category.id, value)
-                    }
-                    className="mt-2"
-                  />
+                  <>
+                    <Slider
+                      defaultValue={[category.percentage]}
+                      max={100}
+                      step={1}
+                      value={[category.percentage]}
+                      onValueChange={(value) =>
+                        handleSliderChange(category.id, value)
+                      }
+                      className="mt-2"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 w-full text-xs"
+                      onClick={() => {
+                        const amount = prompt(
+                          `Enter amount for ${category.name}:`,
+                        );
+                        if (
+                          amount &&
+                          !isNaN(Number(amount)) &&
+                          validIncome > 0
+                        ) {
+                          const newPercentage = Math.round(
+                            (Number(amount) / validIncome) * 100,
+                          );
+                          handleSliderChange(category.id, [newPercentage]);
+                        } else if (validIncome <= 0) {
+                          alert(
+                            "Please enter your income first before setting category amounts.",
+                          );
+                        }
+                      }}
+                    >
+                      Enter Amount
+                    </Button>
+                  </>
                 )}
               </CardContent>
             </Card>
           ))}
         </div>
       </CardContent>
-      <CardFooter className="flex justify-between">
-        {isEditing ? (
-          <>
-            <Button
-              variant="outline"
-              onClick={() => handleAcceptRecommendations()}
-            >
-              Reset to Recommendations
-            </Button>
-            <Button
-              onClick={handleSaveCustomAllocations}
-              disabled={totalPercentage !== 100}
-            >
-              Save Allocations
-            </Button>
-          </>
-        ) : (
-          <>
-            <Button variant="outline" onClick={() => setIsEditing(true)}>
-              Customize Allocations
-            </Button>
-            <Button onClick={handleAcceptRecommendations}>
-              Accept Recommendations
-            </Button>
-          </>
-        )}
+      <CardFooter className="flex flex-col gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 sm:justify-between w-full">
+          {isEditing ? (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => handleAcceptRecommendations()}
+                className="w-full sm:w-auto text-sm"
+              >
+                Reset to Recommendations
+              </Button>
+              <Button
+                onClick={handleSaveCustomAllocations}
+                disabled={totalPercentage !== 100}
+                className="w-full sm:w-auto text-sm bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:hover:bg-gray-400"
+              >
+                Save Allocations
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setIsEditing(true)}
+                className="w-full sm:w-auto text-sm"
+              >
+                Customize Allocations
+              </Button>
+              <Button
+                onClick={handleAcceptRecommendations}
+                className="w-full sm:w-auto text-sm bg-green-600 hover:bg-green-700"
+              >
+                Accept Recommendations
+              </Button>
+            </>
+          )}
+        </div>
+        <Button
+          variant="destructive"
+          size="sm"
+          className="w-full mt-2"
+          onClick={() => {
+            if (
+              confirm(
+                "Are you sure you want to reset all budget data? This cannot be undone.",
+              )
+            ) {
+              // Reset categories to default
+              setCategories(defaultCategories);
+              setTotalPercentage(100);
+              setIsEditing(false);
+              onSaveBudget(defaultCategories);
+
+              // Clear all localStorage items related to budget
+              localStorage.removeItem("userBudgetCategories");
+              localStorage.removeItem("userExpenses");
+              localStorage.removeItem("userSavingsGoal");
+              localStorage.removeItem("userSavingsProgress");
+
+              // Also clear any error messages that might be displayed
+              const errorMessages = document.querySelectorAll(
+                ".fixed.top-4.right-4",
+              );
+              errorMessages.forEach((el) => el.parentNode?.removeChild(el));
+
+              alert("Budget data has been reset successfully.");
+            }
+          }}
+        >
+          Reset All Budget Data
+        </Button>
       </CardFooter>
     </Card>
   );

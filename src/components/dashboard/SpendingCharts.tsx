@@ -174,11 +174,28 @@ const SpendingCharts = ({
             // Determine if the arc should be drawn as a large arc
             const largeArcFlag = percentage > 50 ? 1 : 0;
 
+            // Map color classes to actual fill colors for better visibility
+            const getColorFromClass = (colorClass: string) => {
+              const colorMap: Record<string, string> = {
+                "bg-blue-500": "#3b82f6",
+                "bg-green-500": "#22c55e",
+                "bg-yellow-500": "#eab308",
+                "bg-purple-500": "#a855f7",
+                "bg-pink-500": "#ec4899",
+                "bg-indigo-500": "#6366f1",
+                "bg-red-500": "#ef4444",
+                "bg-orange-500": "#f97316",
+                "bg-teal-500": "#14b8a6",
+                "bg-cyan-500": "#06b6d4",
+              };
+              return colorMap[colorClass] || "#9ca3af";
+            };
+
             return (
               <path
                 key={item.category}
                 d={`M 50 50 L ${startX} ${startY} A 40 40 0 ${largeArcFlag} 1 ${endX} ${endY} Z`}
-                className={item.color}
+                fill={getColorFromClass(item.color)}
                 stroke="white"
                 strokeWidth="0.5"
               />
@@ -430,14 +447,37 @@ const SpendingCharts = ({
         {/* Category legend for pie chart */}
         {chartType === "pie" && (
           <div className="mt-6 grid grid-cols-2 sm:grid-cols-3 gap-2">
-            {categoryData.map((item) => (
-              <div key={item.category} className="flex items-center">
-                <div className={cn("w-3 h-3 rounded-full mr-2", item.color)} />
-                <span className="text-sm">
-                  {item.category} ({((item.amount / total) * 100).toFixed(1)}%)
-                </span>
-              </div>
-            ))}
+            {categoryData.map((item) => {
+              // Get the color style directly from the color class
+              const getColorStyle = (colorClass: string) => {
+                const colorMap: Record<string, string> = {
+                  "bg-blue-500": "#3b82f6",
+                  "bg-green-500": "#22c55e",
+                  "bg-yellow-500": "#eab308",
+                  "bg-purple-500": "#a855f7",
+                  "bg-pink-500": "#ec4899",
+                  "bg-indigo-500": "#6366f1",
+                  "bg-red-500": "#ef4444",
+                  "bg-orange-500": "#f97316",
+                  "bg-teal-500": "#14b8a6",
+                  "bg-cyan-500": "#06b6d4",
+                };
+                return { backgroundColor: colorMap[colorClass] || "#9ca3af" };
+              };
+
+              return (
+                <div key={item.category} className="flex items-center">
+                  <div
+                    className="w-3 h-3 rounded-full mr-2"
+                    style={getColorStyle(item.color)}
+                  />
+                  <span className="text-sm">
+                    {item.category} ({((item.amount / total) * 100).toFixed(1)}
+                    %)
+                  </span>
+                </div>
+              );
+            })}
           </div>
         )}
       </CardContent>
