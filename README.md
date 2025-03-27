@@ -10,6 +10,11 @@
 
 **✨ AI-Powered Budget Management Dashboard ✨**
 
+![image](https://github.com/user-attachments/assets/8ec784e7-dd81-4684-b045-f4358e3751dc)
+
+
+
+
 </div>
 
 ## 🚀 Overview
@@ -29,16 +34,21 @@ BudgetAI is a cutting-edge financial management application that leverages artif
 
 ## 🖥️ Screenshots
 
-<div align="center">
-  <img src="https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=800&q=80" alt="Dashboard" width="80%"/>
-  <p><em>Main Dashboard View</em></p>
-  
-  <br/>
-  
-  <div style="display: flex; justify-content: space-between;">
-    <img src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=80" alt="Budget Allocation" width="48%"/>
-    <img src="https://images.unsplash.com/photo-1543286386-713bdd548da4?w=400&q=80" alt="Expense Tracking" width="48%"/>
-  </div>
+![image](https://github.com/user-attachments/assets/18dbdaab-333b-4e3f-b85b-5bf78edfc375)
+
+
+
+![image](https://github.com/user-attachments/assets/c9f568da-5449-4258-9383-ae7449eca156)
+
+
+****![image](https://github.com/user-attachments/assets/9c47bdec-8ff0-4433-a122-13038d4f4561)
+
+
+![image](https://github.com/user-attachments/assets/2e7c6d9b-a8c5-4522-b8ba-c653fdf5aef2)
+
+
+
+
   <p><em>Budget Allocation & Expense Tracking</em></p>
 </div>
 
@@ -125,6 +135,10 @@ graph TD
   - **BudgetAlerts**: Notifications for budget thresholds
 
 ## 🔧 Advanced Configuration
+
+![image](https://github.com/user-attachments/assets/f1037a13-c3b5-42b0-8d7a-08d05f9e4b9a)
+
+
 
 BudgetAI supports various configuration options to customize the experience:
 
